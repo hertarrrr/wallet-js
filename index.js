@@ -1,22 +1,33 @@
-import WalletConnectProvider from "@walletconnect/web3-provider";
-const name = WalletConnectProvider.name
+import { ethers } from "ethers"
 
-const connect = () => {
-  if (typeof window === "undefined") {
-    console.log("environment: node.js")
+let provider
+
+const metamask = async () => {
+  if(!window.ethereum) {
+    return null
   }
-  else {
-    console.log("environment: browser")
-    const metamask = () => {
-      if(window.web3) {
-        console.log("web3 exists", name)
-      }
-      else {
-        console.log("web3 doesn't exist")
-      }
-      metamask()
-    }
-  }
+
+  const metamask = window.ethereum
+  provider = new ethers.providers.Web3Provider(metamask)
+  const accounts = await metamask.request({
+    method: "eth_requestAccounts"
+  })
+    // handled by request
+    .catch(err => console.error(err))
+  return ethers.utils.getAddress(accounts[0])
 }
 
-export default connect;
+export const connectWallet = async () => {
+  if (typeof window === "undefined") {
+    console.log("environment required: browser")
+    return null
+  }
+  return metamask()
+}
+
+export const signMessage = async (data) => {
+  if(provider === undefined) {
+    return ""
+  }
+  return await provider.getSigner().signMessage(data)
+}
