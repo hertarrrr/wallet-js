@@ -1,33 +1,51 @@
 import { ethers } from "ethers"
 
 let provider
+let mmExtension
 
-const metamask = async () => {
-  if(!window.ethereum) {
-    return null
+const connector = {
+  metamask: async () => {
+    if(mmExtension === undefined) {
+      return null
+    }
+
+    const accounts = await mmExtension.request({
+      method: "eth_requestAccounts"
+    })
+    return ethers.utils.getAddress(accounts[0])
   }
-
-  const metamask = window.ethereum
-  provider = new ethers.providers.Web3Provider(metamask)
-  const accounts = await metamask.request({
-    method: "eth_requestAccounts"
-  })
-    // handled by request
-    .catch(err => console.error(err))
-  return ethers.utils.getAddress(accounts[0])
 }
 
 export const connectWallet = async () => {
-  if (typeof window === "undefined") {
-    console.log("environment required: browser")
-    return null
+  try {
+    return await connector.metamask()
   }
-  return metamask()
+  catch (error) { }
 }
 
 export const signMessage = async (data) => {
   if(provider === undefined) {
-    return ""
+    return null
   }
-  return await provider.getSigner().signMessage(data)
+
+  try {
+    return await provider.getSigner().signMessage(data)
+  }
+  catch (error) { }
 }
+
+const init = () => {
+  if (typeof window === "undefined") {
+    console.log("environment required: browser")
+    return null
+  }
+
+  if(!window.ethereum) {
+    return null
+  }
+
+  mmExtension = window.ethereum
+  provider = new ethers.providers.Web3Provider(mmExtension)
+}
+
+init()
